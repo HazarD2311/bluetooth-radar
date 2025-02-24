@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:intl/intl.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../common/logger.dart';
 import '../common/utils.dart';
@@ -10,13 +11,13 @@ typedef Id = String;
 
 class BluetoothScannerManager {
   final int _scanDurationSec;
-  final int _scanPeriodicSec;
+  final int _scanPauseSec;
 
   BluetoothScannerManager({
     required int scanDurationSec,
-    required int scanPeriodicSec,
+    required int scanPauseSec,
   })  : _scanDurationSec = scanDurationSec,
-        _scanPeriodicSec = scanPeriodicSec;
+        _scanPauseSec = scanPauseSec;
 
   Stream<bool> get isScanning => FlutterBluePlus.isScanning;
 
@@ -31,16 +32,16 @@ class BluetoothScannerManager {
                 ),
           ));
 
-  void init() {
-    startScan();
-  }
+  Timer? _timer;
 
   void startScan() {
-    Timer.periodic(
-      Duration(seconds: _scanPeriodicSec),
-      (timer) {
+    _timer ??= Timer.periodic(
+      Duration(seconds: _scanPauseSec) + Duration(seconds: _scanDurationSec),
+      (timer) async {
         logger.d('start scanning');
-        FlutterBluePlus.startScan(timeout: Duration(seconds: _scanDurationSec));
+        await FlutterBluePlus.startScan(timeout: Duration(seconds: _scanDurationSec));
+        _timer = null;
+        logger.d('end scanning');
       },
     );
   }
@@ -73,7 +74,7 @@ class FindCurrentNameManager {
 
   final BluetoothScannerManager _scannerManager;
 
-  final StreamController<List<DeviceResult>> results = StreamController();
+  final StreamController<List<DeviceResult>> results = StreamController.broadcast();
   List<DeviceResult> _lastResults = [];
 
   void init() {
@@ -92,6 +93,10 @@ class FindCurrentNameManager {
         results.add(_lastResults);
       }
     });
+    results.stream
+        .where((it) => it.isNotEmpty)
+        .throttleTime(Duration(seconds: 5))
+        .listen((it) => logger.d('founded $it'));
   }
 }
 
