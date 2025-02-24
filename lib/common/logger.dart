@@ -11,6 +11,6 @@ class Logger {
   Logger(this._logSpace);
 
   void d(String logText) {
-    log('-$_logSpace- | $logText');
+    print('-$_logSpace- | $logText');
   }
 }

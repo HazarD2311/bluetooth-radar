@@ -19,14 +19,14 @@ void callbackDispatcher() {
 class BackgroundWorkManager {
   final workManager = Workmanager();
 
-  void init() {
+  Future<void> init() async {
     // WidgetsFlutterBinding.ensureInitialized();
-    workManager.initialize(
+    await workManager.initialize(
       callbackDispatcher,
       isInDebugMode: true,
     );
 
-    workManager.registerPeriodicTask(
+    await workManager.registerPeriodicTask(
       "bluetoothScanTask",
       "bluetoothScan",
       frequency: Duration(seconds: 7),
@@ -38,7 +38,7 @@ class BackgroundWorkManager {
       switch (task) {
         case "bluetoothScan":
           Locator.instance.init();
-          logger.d('execute from dispatcher');
+          // logger.d('execute from dispatcher');
           break;
       }
 

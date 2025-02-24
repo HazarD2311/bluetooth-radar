@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bluetooth_radar_demo/managers/notification_manager.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:rxdart/rxdart.dart';
@@ -68,11 +69,12 @@ class HistoryScanResultManager {
 }
 
 class FindCurrentNameManager {
-  FindCurrentNameManager(this._scannerManager, {required this.remotedIds});
+  FindCurrentNameManager(this._scannerManager, this._notificationManager, {required this.remotedIds});
 
   final Set<String> remotedIds;
 
   final BluetoothScannerManager _scannerManager;
+  final SoundNotificationManager _notificationManager;
 
   final StreamController<List<DeviceResult>> results = StreamController.broadcast();
   List<DeviceResult> _lastResults = [];
@@ -93,10 +95,12 @@ class FindCurrentNameManager {
         results.add(_lastResults);
       }
     });
-    results.stream
-        .where((it) => it.isNotEmpty)
-        .throttleTime(Duration(seconds: 5))
-        .listen((it) => logger.d('founded $it'));
+    results.stream.where((it) => it.isNotEmpty).throttleTime(Duration(seconds: 5)).listen(
+      (it) {
+        _notificationManager.showNotification('Нашёл сокровище рядом!', it.toString(), it.first.updated.millisecond);
+        logger.d('founded $it');
+      },
+    );
   }
 }
 
